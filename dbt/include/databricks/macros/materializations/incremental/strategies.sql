@@ -1,9 +1,14 @@
 {% macro dbt_spark_get_incremental_sql(strategy, source, target, unique_key, partition_by, partitions=[]) %}
   
-  {% set partition_match %}
-    {{ target }}.{{ partition_by }} IN ({% for p in partitions -%}"{{ p[partition_by] }}"{% if !loop.last -%},{%- endif -%} {%- endfor -%})
-  {% endset %}
-  {%- set predicates = [partition_match] -%}
+  {%- set predicates = [] -%}
+  {% if partitions %}
+    {% set partition_match %}
+        {{ target }}.{{ partition_by }} IN ({% for p in partitions -%}"{{ p[partition_by] }}"{% if !loop.last -%},{%- endif -%} {%- endfor -%})
+    {% endset %}
+    {% do predicates.append(partition_match) %}
+  {% else %}
+    {% do predicates.append('FALSE') %}
+  {% endif %}
 
   {%- if strategy == 'append' -%}
     {#-- insert new records into existing table, without updating or overwriting #}
