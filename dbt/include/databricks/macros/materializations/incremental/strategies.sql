@@ -1,6 +1,6 @@
-{% macro dbt_databricksv__get_merge_sql(target, source, unique_key, dest_columns, predicates) -%}
+{% macro databricks__get_merge_sql(target, source, unique_key, dest_columns, predicates) -%}
     {{- log("using dbt_databricksv__get_merge_sql...", True) -}}
-    
+
     {%- set predicates = [] if predicates is none else [] + predicates -%}
     {%- set dest_cols_csv = get_quoted_csv(dest_columns | map(attribute="name")) -%}
     {%- set update_columns = config.get('merge_update_columns', default = dest_columns | map(attribute="quoted") | list) -%}
