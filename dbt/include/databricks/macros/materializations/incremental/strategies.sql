@@ -1,6 +1,4 @@
 {% macro databricks__get_merge_sql(target, source, unique_key, dest_columns, predicates=none) %}
-  {{- log("using dbt_databricksv__get_merge_sql...", True) -}}
-
   {%- set predicates = [] if predicates is none else [] + predicates -%}
   {# skip dest_columns, use merge_update_columns config if provided, otherwise use "*" #}
   {%- set update_columns = config.get("merge_update_columns") -%}
@@ -22,8 +20,6 @@
   {% else %}
       {% do predicates.append('FALSE') %}
   {% endif %}
-
-  {{- log("predicates: " ~predicates, True) -}}
 
     merge into {{ target }} as DBT_INTERNAL_DEST
       using {{ source.include(schema=false) }} as DBT_INTERNAL_SOURCE
@@ -67,18 +63,15 @@
   {% if partitions %}
     {% set partition_match %}
       {%- for partition_key in partition_by -%}
-      {{- log("checking partition key: " ~partition_key, True) -}}
         {% if partitions[partition_key] %}
         {%- if loop.first %}({% endif -%}
         {%- for partition_values in partitions[partition_key] -%}
-          {{- log("partition_values: " ~partition_values, True) -}}
           {%- if loop.first %}({% endif -%}DBT_INTERNAL_DEST.{{ partition_key }} = "{{ partition_values[0] }}"{%- if not loop.last %} AND{% else -%}){% endif -%}
         {%- endfor -%}
         {%- if not loop.last %} OR{% else -%}){% endif -%}
         {% endif %}
       {%- endfor -%}
     {% endset %}
-    {{- log("partition_match: " ~partition_match, True) -}}
     {% if partition_match %}
       {% do predicates.append(partition_match) %}
     {% else %}
@@ -87,7 +80,6 @@
   {% else %}
     {% do predicates.append('FALSE') %}
   {% endif %}
-  {{- log("predicates: " ~predicates, True) -}}
 
   {%- if strategy == 'append' -%}
     {#-- insert new records into existing table, without updating or overwriting #}
