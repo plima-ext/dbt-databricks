@@ -24,17 +24,23 @@
   {% if partitions %}
     {% set partition_match %}
       {% for partition_key in partition_by -%}
+      {{- log("checking partition key: " ~partition_key, True) -}}
+        {% if partitions[partition_key] %}
         {%- if loop.first %}({% endif -%}
         {% for partition_values in partitions[partition_key] -%}
+          {{- log("partition_values: " ~partition_values, True) -}}
           {%- if loop.first %}({% endif -%}{{ target }}.partition_key = "{{ p[partition_by] }}"{%- if not loop.last %} AND{% else -%}){% endif -%}
         {%- endfor -%}
         {%- if not loop.last %} OR{% else -%}){% endif -%}
+        {% endif %}
       {%- endfor -%}
     {% endset %}
+    {{- log("partition_match: " ~partition_match, True) -}}
     {% do predicates.append(partition_match) %}
   {% else %}
     {% do predicates.append('FALSE') %}
   {% endif %}
+  {{- log("predicates: " ~predicates, True) -}}
 
   {%- if strategy == 'append' -%}
     {#-- insert new records into existing table, without updating or overwriting #}

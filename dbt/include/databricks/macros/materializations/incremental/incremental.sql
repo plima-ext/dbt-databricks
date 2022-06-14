@@ -36,9 +36,12 @@
     {% do process_schema_changes(on_schema_change, tmp_relation, existing_relation) %}
     {%- set partitions = {} -%}
     {% for partition_key in partition_by %}
+      {{- log("checking partition key: " ~partition_key, True) -}}
       {%- set get_partitions_query -%}  SELECT DISTINCT {{ tmp_relation.include(schema=false) }}.{{partition_key}} FROM {{ tmp_relation.include(schema=false) }} {%- endset -%}
       {% set partition_values = run_query(get_partitions_query) %}
-      {% do partitions.update({partition_key: partition_values.rows}) %} 
+      {{- log("partition distintct values: " ~partition_values, True) -}}
+      {% do partitions.update({partition_key: partition_values.rows}) %}
+      {{- log("partitions: " ~partitions, True) -}}
     {% endfor %}
     {% set build_sql = dbt_databricks_get_incremental_sql(strategy, tmp_relation, target_relation, unique_key, partition_by, partitions) %}
   {% endif %}
