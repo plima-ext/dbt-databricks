@@ -34,7 +34,9 @@
   {% else %}
     {% do run_query(create_table_as(True, tmp_relation, sql)) %}
     {% do process_schema_changes(on_schema_change, tmp_relation, existing_relation) %}
-    {% set build_sql = dbt_databricks_get_incremental_sql(strategy, tmp_relation, target_relation, unique_key) %}
+    {%- set get_partitions_query -%}  SELECT DISTINCT {{ tmp_relation.include(schema=false) }}.{{partition_by}} FROM {{ tmp_relation.include(schema=false) }} {%- endset -%}
+    {% set partitions = run_query(get_partitions_query) %}
+    {% set build_sql = dbt_databricks_get_incremental_sql(strategy, tmp_relation, target_relation, unique_key, partition_by, partitions.rows) %}
   {% endif %}
 
   {%- call statement('main') -%}
