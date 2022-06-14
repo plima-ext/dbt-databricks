@@ -19,11 +19,17 @@
 {% endmacro %}
 
 
-{% macro dbt_databricks_get_incremental_sql(strategy, source, target, unique_key, partition_by, partitions=[]) %}
+{% macro dbt_databricks_get_incremental_sql(strategy, source, target, unique_key, partition_by, partitions=None) %}
   {%- set predicates = [] -%}
   {% if partitions %}
     {% set partition_match %}
-        {{ target }}.{{ partition_by }} IN ({% for p in partitions -%}"{{ p[partition_by] }}"{% if not loop.last -%},{%- endif -%} {%- endfor -%})
+      {% for partition_key in partition_by -%}
+        {%- if loop.first %}({% endif -%}
+        {% for partition_values in partitions[partition_key] -%}
+          {%- if loop.first %}({% endif -%}{{ target }}.partition_key = "{{ p[partition_by] }}"{%- if not loop.last %} AND{% else -%}){% endif -%}
+        {%- endfor -%}
+        {%- if not loop.last %} OR{% else -%}){% endif -%}
+      {%- endfor -%}
     {% endset %}
     {% do predicates.append(partition_match) %}
   {% else %}
