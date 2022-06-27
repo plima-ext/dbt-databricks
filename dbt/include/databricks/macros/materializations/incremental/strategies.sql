@@ -66,9 +66,9 @@
         {% if partitions[partition_key] %}
         {%- if loop.first %}({% endif -%}
         {%- for partition_values in partitions[partition_key] -%}
-          {%- if loop.first %}({% endif -%}DBT_INTERNAL_DEST.{{ partition_key }} = "{{ partition_values[0] }}"{%- if not loop.last %} AND{% else -%}){% endif -%}
+          {%- if loop.first %}({% endif -%}DBT_INTERNAL_DEST.{{ partition_key }} = "{{ partition_values[0] }}"{%- if not loop.last %} AND {% else -%}){% endif -%}
         {%- endfor -%}
-        {%- if not loop.last %} OR{% else -%}){% endif -%}
+        {%- if not loop.last %} OR {% else -%}){% endif -%}
         {% endif %}
       {%- endfor -%}
     {% endset %}
