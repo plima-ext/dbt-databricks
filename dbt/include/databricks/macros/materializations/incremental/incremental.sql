@@ -35,7 +35,7 @@
     {% do run_query(create_table_as(True, tmp_relation, sql)) %}
     {% do process_schema_changes(on_schema_change, tmp_relation, existing_relation) %}
     {%- set partitions = {} -%}
-    {%- set get_partitions_query -%}  SELECT DISTINCT {%- for partition_key in partition_by -%}{{ tmp_relation.include(schema=false) }}.{{partition_key}}{%- if not loop.last %}, {% endif -%}{%- endfor -%} FROM {{ tmp_relation.include(schema=false) }} {%- endset -%}
+    {%- set get_partitions_query -%}  SELECT DISTINCT {%- for partition_key in partition_by -%} {{ tmp_relation.include(schema=false) }}.{{partition_key}}{%- if not loop.last %},{% endif -%} {%- endfor -%} FROM {{ tmp_relation.include(schema=false) }} {%- endset -%}
     {% set partition_values = run_query(get_partitions_query) %}
     {% do partitions.update(partition_values.rows) %}
     
