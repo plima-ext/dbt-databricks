@@ -126,3 +126,11 @@
     {% endfor %}
   {% endif %}
 {% endmacro %}
+
+{% macro databricks__list_relations_without_caching(relation) %}
+  {% call statement('list_relations_without_caching', fetch_result=True) -%}
+    show table extended in {{ relation.schema }} like '{{ relation.identifier or "*" }}'
+  {% endcall %}
+
+  {% do return(load_result('list_relations_without_caching').table) %}
+{% endmacro %}
