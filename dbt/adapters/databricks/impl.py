@@ -2,7 +2,7 @@ from concurrent.futures import Future
 from contextlib import contextmanager
 from dataclasses import dataclass
 import re
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, Set
 
 from agate import Row, Table
 
@@ -19,6 +19,8 @@ from dbt.adapters.spark.impl import (
 from dbt.contracts.connection import AdapterResponse
 from dbt.contracts.graph.manifest import Manifest
 from dbt.contracts.relation import RelationType
+from dbt.contracts.graph.manifest import Manifest
+
 import dbt.exceptions
 from dbt.events import AdapterLogger
 from dbt.utils import executor
@@ -57,6 +59,37 @@ class DatabricksAdapter(SparkAdapter):
     connections: DatabricksConnectionManager
 
     AdapterSpecificConfigs = DatabricksConfig
+
+    def _get_cache_schemas(self, manifest: Manifest) -> Set[BaseRelation]:
+        """Get the set of schema relations that the cache logic needs to
+        populate. This means only executable nodes are included.
+        """
+        # the cache only cares about executable nodes
+        relations = [
+            self.Relation.create_from(self.config, node)  # keep the identifier
+            for node in manifest.nodes.values()
+            if (
+                node.is_relational and not node.is_ephemeral_model
+            )
+        ]
+        # group up relations by common schema
+        import collections
+        relmap = collections.defaultdict(list)
+        for r in relations:
+            relmap[r.schema].append(r)
+        # create a single relation for each schema
+        # set the identifier to a '|' delimited string of relation names, or '*'
+        schemas = [
+            self.Relation.create(
+                schema=schema,                
+                identifier=(
+                    '|'.join(r.identifier for r in rels)
+                    # there's probably some limit to how many we can include by name
+                    if len(rels) < 100 else '*'
+                )
+            ) for schema, rels in relmap.items()
+        ]
+        return schemas
 
     def list_schemas(self, database: Optional[str]) -> List[str]:
         """
