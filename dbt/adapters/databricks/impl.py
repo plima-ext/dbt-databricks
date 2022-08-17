@@ -27,6 +27,7 @@ from dbt.adapters.databricks.column import DatabricksColumn
 from dbt.adapters.databricks.connections import DatabricksConnectionManager
 from dbt.adapters.databricks.relation import DatabricksRelation
 from dbt.adapters.databricks.utils import undefined_proof
+from dbt.contracts.graph.manifest import Manifest
 
 
 logger = AdapterLogger("Databricks")
