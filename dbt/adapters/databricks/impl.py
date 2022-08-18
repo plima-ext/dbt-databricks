@@ -216,6 +216,23 @@ class DatabricksAdapter(SparkAdapter):
             )
             columns.append(column)
         return columns
+    
+    def get_relation(
+        self,
+        database: Optional[str],
+        schema: str,
+        identifier: str,
+        needs_information=False
+    ) -> Optional[BaseRelation]:
+        if not self.Relation.include_policy.database:
+            database = None
+
+        cached = super().get_relation(database, schema, identifier)
+
+        if not needs_information:
+            return cached
+
+        return self._set_relation_information(cached) if cached else None
 
     def get_catalog(self, manifest: Manifest) -> Tuple[Table, List[Exception]]:
         schema_map = self._get_catalog_schemas(manifest)
