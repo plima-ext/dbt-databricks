@@ -2,7 +2,7 @@ from concurrent.futures import Future
 from contextlib import contextmanager
 from dataclasses import dataclass
 import re
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, Set
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from agate import Row, Table
 
@@ -13,11 +13,12 @@ from dbt.adapters.spark.impl import (
     SparkAdapter,
     KEY_TABLE_OWNER,
     KEY_TABLE_STATISTICS,
+    LIST_RELATIONS_MACRO_NAME,
     LIST_SCHEMAS_MACRO_NAME,
 )
 from dbt.contracts.connection import AdapterResponse
+from dbt.contracts.graph.manifest import Manifest
 from dbt.contracts.relation import RelationType
-
 import dbt.exceptions
 from dbt.events import AdapterLogger
 from dbt.utils import executor
@@ -26,14 +27,13 @@ from dbt.adapters.databricks.column import DatabricksColumn
 from dbt.adapters.databricks.connections import DatabricksConnectionManager
 from dbt.adapters.databricks.relation import DatabricksRelation
 from dbt.adapters.databricks.utils import undefined_proof
-from dbt.contracts.graph.manifest import Manifest
 
 
 logger = AdapterLogger("Databricks")
 
 CURRENT_CATALOG_MACRO_NAME = "current_catalog"
 USE_CATALOG_MACRO_NAME = "use_catalog"
-LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
+
 
 @dataclass
 class DatabricksConfig(AdapterConfig):
@@ -57,37 +57,6 @@ class DatabricksAdapter(SparkAdapter):
     connections: DatabricksConnectionManager
 
     AdapterSpecificConfigs = DatabricksConfig
-
-    def _get_cache_schemas(self, manifest: Manifest) -> Set[BaseRelation]:
-        """Get the set of schema relations that the cache logic needs to
-        populate. This means only executable nodes are included.
-        """
-        # the cache only cares about executable nodes
-        relations = [
-            self.Relation.create_from(self.config, node)  # keep the identifier
-            for node in manifest.nodes.values()
-            if (
-                node.is_relational and not node.is_ephemeral_model
-            )
-        ]
-        # group up relations by common schema
-        import collections
-        relmap = collections.defaultdict(list)
-        for r in relations:
-            relmap[r.schema].append(r)
-        # create a single relation for each schema
-        # set the identifier to a '|' delimited string of relation names, or '*'
-        schemas = [
-            self.Relation.create(
-                schema=schema,                
-                identifier=(
-                    '|'.join(r.identifier for r in rels)
-                    # there's probably some limit to how many we can include by name
-                    if len(rels) < 100 else '*'
-                )
-            ) for schema, rels in relmap.items()
-        ]
-        return schemas
 
     def list_schemas(self, database: Optional[str]) -> List[str]:
         """
@@ -216,23 +185,6 @@ class DatabricksAdapter(SparkAdapter):
             )
             columns.append(column)
         return columns
-    
-    def get_relation(
-        self,
-        database: Optional[str],
-        schema: str,
-        identifier: str,
-        needs_information=False
-    ) -> Optional[BaseRelation]:
-        if not self.Relation.include_policy.database:
-            database = None
-
-        cached = super().get_relation(database, schema, identifier)
-
-        if not needs_information:
-            return cached
-
-        return self._set_relation_information(cached) if cached else None
 
     def get_catalog(self, manifest: Manifest) -> Tuple[Table, List[Exception]]:
         schema_map = self._get_catalog_schemas(manifest)
