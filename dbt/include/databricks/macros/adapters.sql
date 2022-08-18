@@ -163,11 +163,3 @@
 
     {% do return(tmp_relation) %}
 {% endmacro %}
-
-{% macro databricks__list_relations_without_caching(relation) %}
-  {{ return(adapter.dispatch('list_tables_without_caching', 'dbt')(relation)) }}
-{%- endmacro -%}
-
-{% macro databricks__list_views_without_caching(relation) %}
-  {{ return(adapter.dispatch('list_tables_without_caching', 'dbt')(relation)) }}
-{%- endmacro -%}
