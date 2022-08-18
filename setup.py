@@ -55,6 +55,7 @@ setup(
     packages=find_namespace_packages(include=["dbt", "dbt.*"]),
     include_package_data=True,
     install_requires=[
+        "dbt-spark~={}".format(dbt_spark_version),
         "databricks-sql-connector>=2.0.1",
     ],
     zip_safe=False,
