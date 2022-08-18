@@ -33,7 +33,8 @@ logger = AdapterLogger("Databricks")
 
 CURRENT_CATALOG_MACRO_NAME = "current_catalog"
 USE_CATALOG_MACRO_NAME = "use_catalog"
-
+LIST_TABLES_MACRO_NAME = 'databricks__list_tables_without_caching'
+LIST_VIEWS_MACRO_NAME = 'databricks__list_views_without_caching'
 
 @dataclass
 class DatabricksConfig(AdapterConfig):
@@ -92,11 +93,17 @@ class DatabricksAdapter(SparkAdapter):
     def list_relations_without_caching(
         self, schema_relation: DatabricksRelation
     ) -> List[DatabricksRelation]:
-        kwargs = {"schema_relation": schema_relation}
+        kwargs = {'relation': schema_relation}
         try:
             # The catalog for `show table extended` needs to match the current catalog.
-            with self._catalog(schema_relation.database):
-                results = self.execute_macro(LIST_RELATIONS_MACRO_NAME, kwargs=kwargs)
+            tables = self.execute_macro(
+                LIST_TABLES_MACRO_NAME,
+                kwargs=kwargs
+            )
+            views = self.execute_macro(
+                LIST_VIEWS_MACRO_NAME,
+                 kwargs=kwargs
+            )
         except dbt.exceptions.RuntimeException as e:
             errmsg = getattr(e, "msg", "")
             if f"Database '{schema_relation}' not found" in errmsg:
@@ -107,26 +114,34 @@ class DatabricksAdapter(SparkAdapter):
                 return []
 
         relations = []
-        for row in results:
-            if len(row) != 4:
-                raise dbt.exceptions.RuntimeException(
-                    f'Invalid value from "show table extended ...", '
-                    f"got {len(row)} values, expected 4"
-                )
-            _schema, name, _, information = row
-            rel_type = RelationType.View if "Type: VIEW" in information else RelationType.Table
-            is_delta = "Provider: delta" in information
-            is_hudi = "Provider: hudi" in information
+        for tbl in tables:
+            rel_type = ('view' if tbl['tableName'] in views.columns["viewName"].values() else 'table')
             relation = self.Relation.create(
-                database=schema_relation.database,
-                schema=_schema,
-                identifier=name,
+                schema=tbl['database'],
+                identifier=tbl['tableName'],
                 type=rel_type,
-                information=information,
-                is_delta=is_delta,
-                is_hudi=is_hudi,
             )
             relations.append(relation)
+        #for row in results:
+        #    if len(row) != 4:
+        #        raise dbt.exceptions.RuntimeException(
+        #            f'Invalid value from "show table extended ...", '
+        #            f"got {len(row)} values, expected 4"
+        #        )
+        #    _schema, name, _, information = row
+        #    rel_type = RelationType.View if "Type: VIEW" in information else RelationType.Table
+        #    is_delta = "Provider: delta" in information
+        #    is_hudi = "Provider: hudi" in information
+        #    relation = self.Relation.create(
+        #        database=schema_relation.database,
+        #        schema=_schema,
+        #        identifier=name,
+        #        type=rel_type,
+        #        information=information,
+        #        is_delta=is_delta,
+        #        is_hudi=is_hudi,
+        #    )
+        #    relations.append(relation)
 
         return relations
 
