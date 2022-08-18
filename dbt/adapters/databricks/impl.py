@@ -13,8 +13,6 @@ from dbt.adapters.spark.impl import (
     SparkAdapter,
     KEY_TABLE_OWNER,
     KEY_TABLE_STATISTICS,
-    LIST_RELATIONS_MACRO_NAME,
-    LIST_SCHEMAS_MACRO_NAME,
 )
 from dbt.contracts.connection import AdapterResponse
 from dbt.contracts.relation import RelationType
@@ -34,7 +32,8 @@ logger = AdapterLogger("Databricks")
 
 CURRENT_CATALOG_MACRO_NAME = "current_catalog"
 USE_CATALOG_MACRO_NAME = "use_catalog"
-
+LIST_RELATIONS_MACRO_NAME = 'list_relations_without_caching'
+LIST_SCHEMAS_MACRO_NAME = 'list_schemas'
 
 @dataclass
 class DatabricksConfig(AdapterConfig):
