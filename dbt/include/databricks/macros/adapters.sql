@@ -164,7 +164,7 @@
     {% do return(tmp_relation) %}
 {% endmacro %}
 
-% macro databricks__list_tables_without_caching(relation) %}
+{% macro databricks__list_tables_without_caching(relation) %}
   {% call statement('list_tables_without_caching', fetch_result=True) -%}
     show tables in {{ relation.schema }}
   {% endcall %}
