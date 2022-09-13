@@ -37,6 +37,8 @@
     {% if partition_by %}
       {%- set get_partitions_query -%}  SELECT DISTINCT {% for partition_key in partition_by %}{{ tmp_relation.include(schema=false) }}.{{partition_key}}{% if not loop.last %}, {% endif %}{% endfor %} FROM {{ tmp_relation.include(schema=false) }} {%- endset -%}
       {%- set partitions = run_query(get_partitions_query).rows -%}
+    {%- else -%}
+      {%- set partitions = None -%}
     {% endif %}
     {% set build_sql = dbt_databricks_get_incremental_sql(strategy, tmp_relation, target_relation, unique_key, partition_by, partitions) %}
   {% endif %}
