@@ -1,21 +1,24 @@
 {% macro dbt_databricks_get_incremental_sql(strategy, source, target, unique_key, partition_by, partitions=None) %}
   {%- set predicates = [] -%}
   {% if partitions is not None %}
-    {% set partition_match %}
-      {%- for partition_values in partitions -%}
-        (
-          {%- for partition_key in partition_by -%}{%- if loop.first %}({% endif -%}DBT_INTERNAL_DEST.{{ partition_key }} = "{{ partition_values[partition_key] }}"{%- if not loop.last %} AND {% else -%}){% endif -%}{%- endfor -%}
-        ){%- if not loop.last %} OR {% endif -%}
-      {%- endfor -%}
-    {% endset %}
-    {% if partition_match %}
-      {% do predicates.append(partition_match) %}
+    {% if partitions %}
+      {% set partition_match %}
+        {%- for partition_values in partitions -%}
+          (
+            {%- for partition_key in partition_by -%}{%- if loop.first %}({% endif -%}DBT_INTERNAL_DEST.{{ partition_key }} = "{{ partition_values[partition_key] }}"{%- if not loop.last %} AND {% else -%}){% endif -%}{%- endfor -%}
+          ){%- if not loop.last %} OR {% endif -%}
+        {%- endfor -%}
+      {% endset %}
+      {% if partition_match %}
+        {% do predicates.append(partition_match) %}
+      {% else %}
+        {% do predicates.append('FALSE') %}
+      {% endif %}
     {% else %}
       {% do predicates.append('FALSE') %}
     {% endif %}
-  {% else %}
-    {% do predicates.append('FALSE') %}
   {% endif %}
+
 
   {%- if strategy == 'append' -%}
     {#-- insert new records into existing table, without updating or overwriting #}
