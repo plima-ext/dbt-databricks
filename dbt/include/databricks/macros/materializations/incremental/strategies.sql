@@ -1,6 +1,6 @@
 {% macro dbt_databricks_get_incremental_sql(strategy, source, target, unique_key, partition_by, partitions=None) %}
   {%- set predicates = [] -%}
-  {% if partitions is not None %}
+  {% if partitions is not none %}
     {% if partitions %}
       {% set partition_match %}
         {%- for partition_values in partitions -%}
