@@ -19,7 +19,7 @@
   {{ print(old_relation.is_delta) }}
   {{ print("config get") }}
   {{ print(config.get('file_format', default='delta')) }}
-  {% if old_relation and not (old_relation.is_delta and config.get('file_format', default='delta') == 'delta') -%}
+  {% if old_relation and not (old_relation.is_delta or config.get('file_format', default='delta') == 'delta') -%}
     {{ adapter.drop_relation(old_relation) }}
   {%- endif %}
 
